@@ -59,5 +59,13 @@ func DefaultFetcherRegistry(client HTTPClient) FetcherRegistry {
 	return NewFetcherRegistry(
 		NewNDTVFetcher(client),
 		NewTOIFetcher(client),
+		NewTheHinduFetcher(client),
+		NewFinancialExpressFetcher(client),
+		NewAnandabazarPatrikaFetcher(client),
+		NewEisamayFetcher(client),
+		NewAajtakFetcher(client),
+		NewJagranFetcher(client),
+		NewDinamalarFetcher(client),
+		NewDailyThanthiFetcher(client),
 	)
 }

@@ -3,7 +3,17 @@
 Taja Khobor is an open-source Go microservice that periodically collects news links, enriches them with basic metadata, and emits lightweight events downstream. It is built to stay small, composable, and friendly to new contributors.
 
 ## What it does (current state)
-- Pluggable providers: each source implements the `pkg/providers.Fetcher` interface and is wired through a registry. Today NDTV and TOI Google News sitemaps are supported.
+- Pluggable providers: each source implements the `pkg/providers.Fetcher` interface and is wired through a registry. Currently supported Google News sitemaps:
+  - NDTV
+  - Times of India
+  - The Hindu
+  - Financial Express
+  - Anandabazar Patrika
+  - Ei Samay
+  - Aaj Tak
+  - Dainik Jagran
+  - Dinamalar
+  - Daily Thanthi
 - Config-driven crawling: providers are declared in YAML/JSON with per-provider headers (User-Agent, Accept, etc.) and `request_delay_ms` throttling.
 - Link extraction: provider fetchers pull URLs from sitemaps/RSS. Common helpers handle Google News sitemap parsing and article ID generation.
 - Metadata enrichment: fetched links are optionally enriched from OG/title/description/image tags with goquery; cancellation returns whatever was processed so far.

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Adda-Baaj/taja-khobor/internal/domain"
 	"github.com/Adda-Baaj/taja-khobor/pkg/httpclient"
@@ -35,7 +36,20 @@ type googleNewsSitemap struct {
 }
 
 type googleNewsURL struct {
-	Loc string `xml:"loc"`
+	Loc    string            `xml:"loc"`
+	News   googleNewsDetail  `xml:"news"`
+	Images []googleNewsImage `xml:"image:image"`
+}
+
+type googleNewsDetail struct {
+	PublicationDate string `xml:"publication_date"`
+	Keywords        string `xml:"keywords"`
+	Title           string `xml:"title"`
+}
+
+type googleNewsImage struct {
+	Loc   string `xml:"image:loc"`
+	Title string `xml:"image:title"`
 }
 
 func parseGoogleNewsSitemap(data []byte) ([]googleNewsURL, error) {
@@ -54,13 +68,63 @@ func buildArticlesFromSitemap(urls []googleNewsURL) []domain.Article {
 			continue
 		}
 
+		keywords := parseKeywords(entry.News.Keywords)
+		publishedAt := parsePublicationDate(entry.News.PublicationDate)
+		title := strings.TrimSpace(entry.News.Title)
+		imageURL := firstImageURL(entry.Images)
+
 		articles = append(articles, domain.Article{
-			ID:    hashURL(loc),
-			Title: "", // Title is not taken from sitemap
-			URL:   loc,
+			ID:          hashURL(loc),
+			Title:       title,
+			URL:         loc,
+			ImageURL:    imageURL,
+			Keywords:    keywords,
+			PublishedAt: publishedAt,
 		})
 	}
 	return articles
+}
+
+func firstImageURL(images []googleNewsImage) string {
+	for _, img := range images {
+		if loc := strings.TrimSpace(img.Loc); loc != "" {
+			return loc
+		}
+	}
+	return ""
+}
+
+func parseKeywords(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	keywords := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if kw := strings.TrimSpace(part); kw != "" {
+			keywords = append(keywords, kw)
+		}
+	}
+
+	if len(keywords) == 0 {
+		return nil
+	}
+	return keywords
+}
+
+func parsePublicationDate(raw string) time.Time {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}
+	}
+
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return t
+	}
+
+	return time.Time{}
 }
 
 func fetchSitemap(ctx context.Context, client httpclient.Client, url, providerID string, headers map[string]string) ([]byte, error) {
