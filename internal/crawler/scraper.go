@@ -125,7 +125,7 @@ func (s *Scraper) articleWorker(
 func (s *Scraper) fetchAndParse(ctx context.Context, cfg providers.Provider, art domain.Article, workerID int) (domain.Article, error) {
 	headers := providers.Headers(cfg)
 
-	s.log.InfoObj("scraping article metadata", "scrape_start", map[string]any{
+	s.log.DebugObj("scraping article metadata", "scrape_start", map[string]any{
 		"worker_id":   workerID,
 		"provider_id": cfg.ID,
 		"url":         art.URL,

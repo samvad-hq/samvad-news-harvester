@@ -37,7 +37,29 @@ func (f *googleNewsFetcher) Fetch(ctx context.Context, cfg Provider) ([]domain.A
 
 	headers := Headers(cfg)
 
-	raw, err := fetchSitemap(ctx, f.client, cfg.SourceURL, cfg.ID, headers)
+	urls, err := f.fetchGoogleNewsURLs(ctx, cfg, cfg.SourceURL, headers, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := buildArticlesFromSitemap(cfg.ID, urls)
+	if len(articles) == 0 {
+		return nil, fmt.Errorf("%s sitemap returned no records", cfg.ID)
+	}
+	return articles, nil
+}
+
+// fetchGoogleNewsURLs resolves the given sitemap URL into article entries, following sitemap indexes if necessary.
+func (f *googleNewsFetcher) fetchGoogleNewsURLs(ctx context.Context, cfg Provider, url string, headers map[string]string, visited map[string]struct{}) ([]googleNewsURL, error) {
+	if visited == nil {
+		visited = make(map[string]struct{})
+	}
+	if _, seen := visited[url]; seen {
+		return nil, nil
+	}
+	visited[url] = struct{}{}
+
+	raw, err := fetchSitemap(ctx, f.client, url, cfg.ID, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +68,30 @@ func (f *googleNewsFetcher) Fetch(ctx context.Context, cfg Provider) ([]domain.A
 	if err != nil {
 		return nil, fmt.Errorf("decode google news sitemap: %w", err)
 	}
-	articles := buildArticlesFromSitemap(cfg.ID, urls)
-	if len(articles) == 0 {
-		return nil, fmt.Errorf("%s sitemap returned no records", cfg.ID)
+	if len(urls) > 0 {
+		return urls, nil
 	}
-	return articles, nil
+
+	indexURLs, err := parseSitemapIndex(raw)
+	if err != nil {
+		return nil, fmt.Errorf("decode sitemap index: %w", err)
+	}
+	if len(indexURLs) == 0 {
+		return nil, nil
+	}
+
+	var all []googleNewsURL
+	for _, indexURL := range indexURLs {
+		indexURL = strings.TrimSpace(indexURL)
+		if indexURL == "" {
+			continue
+		}
+
+		nested, err := f.fetchGoogleNewsURLs(ctx, cfg, indexURL, headers, visited)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, nested...)
+	}
+	return all, nil
 }

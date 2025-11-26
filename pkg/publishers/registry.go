@@ -62,8 +62,8 @@ func (r *registry) PublisherFor(ctx context.Context, cfg PublisherConfig, log Lo
 // DefaultRegistry wires up known publishers.
 func DefaultRegistry() Registry {
 	builders := map[string]Builder{
-		TypeHTTP: newHTTPPublisher,
-		TypeSQS:  newSQSPublisher,
+		TypeHTTP:  newHTTPPublisher,
+		TypeQueue: newQueuePublisher,
 	}
 	return NewRegistry(builders)
 }

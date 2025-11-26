@@ -1,46 +1,28 @@
 # taja-khobor
 
-Taja Khobor is an open-source Go microservice that periodically collects news links, enriches them with basic metadata, and emits lightweight events downstream. It is built to stay small, composable, and friendly to new contributors.
+Taja Khobor is a tiny Go service that crawls news sources, enriches links with lightweight metadata, and fans events out to queues or webhooks. It is intentionally small, pluggable, and friendly to new contributors.
 
-## What it does (current state)
-- Pluggable providers: each source implements the `pkg/providers.Fetcher` interface and is wired through a registry. Currently supported Google News sitemaps:
-  - NDTV
-  - Times of India
-  - The Hindu
-  - Financial Express
-  - Anandabazar Patrika
-  - Ei Samay
-  - Aaj Tak
-  - Dainik Jagran
-  - Dinamalar
-  - Daily Thanthi
-- Config-driven crawling: providers are declared in YAML/JSON with per-provider headers (User-Agent, Accept, etc.) and `request_delay_ms` throttling.
-- Link extraction: provider fetchers pull URLs from sitemaps/RSS. Common helpers handle Google News sitemap parsing and article ID generation.
-- Metadata enrichment: fetched links are optionally enriched from OG/title/description/image tags with goquery; cancellation returns whatever was processed so far.
-- Shared HTTP client abstraction (resty under the hood) and centralized header builder.
-- Pluggable publishers: registry-driven fan-out to HTTP webhooks or AWS SQS queues with JSON payloads.
-- Optional dedupe cache: backed by a local storage file (default `bbolt` config) so previously published article IDs are skipped on future crawls.
-- Structured logging with zap; storage layer is pluggable for future backends.
+## What it does
+- Crawls providers registered in YAML/JSON; today ships with Google News sitemap fetcher. Tested with dozens of Indian news sources.
+- Enriches links with titles/descriptions/images via goquery (best effort, returns partial results on cancel).
+- Fans out JSON events to multiple publishers (HTTP webhooks or queues: AWS SQS/SNS, GCP Pub/Sub) via a registry.
+- Optional dedupe layer (BoltDB file by default) so previously published article IDs are skipped.
 
-## Quickstart
-Prereqs: Go 1.22+.
+## Prereqs
+- Go 1.24+
+- Access to any sinks you enable (webhook URL, SQS/SNS creds, Pub/Sub topic, etc.).
 
+## Quickstart (local)
+1) Providers: edit `configs/providers.yaml` (or point `PROVIDERS_FILE` to your own). Set a real `user_agent`; headers are not defaulted.  
+2) Publishers: copy `configs/publishers.example.yaml` to `configs/publishers.yaml`, then **disable sinks you don’t own** (`enabled: false`) or set the required env vars for the ones you keep. The default example enables GCP Pub/Sub, so toggle it off if you don’t have creds handy.  
+3) Run the collector:
 ```bash
-cp configs/providers.yaml configs/providers.local.yaml  # tweak locally if needed
 go run ./cmd/collector
 ```
+The process stays alive and triggers a crawl every `CRAWL_INTERVAL` (default 15m).
 
-The collector process stays alive and triggers a new crawl every `CRAWL_INTERVAL` (15 minutes by default).
-
-Environment defaults (overridable via env vars):
-- `PROVIDERS_FILE` (default `./configs/providers.yaml`)
-- `PUBLISHERS_FILE` (default `./configs/publishers.yaml`)
-- `LOG_LEVEL` (default `info`)
-- `CRAWL_INTERVAL` (default `15m`)
-
-## Configuring providers
-Providers live in `configs/providers.yaml` (YAML or JSON is accepted). Example:
-
+## Providers
+Providers live in `configs/providers.yaml` (YAML or JSON). Google News example:
 ```yaml
 providers:
   - id: ndtv
@@ -55,58 +37,44 @@ providers:
       accept_language: <optional>
       cache_control: <optional>
 ```
-
 Adding a provider:
-1. For another Google News sitemap, just add an entry like above (set `type: google_news_sitemap`).
-2. For non-sitemap sources, implement `pkg/providers.Fetcher` in a new file, register it in `pkg/providers.DefaultFetcherRegistry`, and set that provider’s `type` (or override via id) to point at your custom fetcher.
+1. For another Google News sitemap: add an entry with `type: google_news_sitemap` and set headers.  
+2. For new source types: implement `pkg/providers.Fetcher`, register it in `pkg/providers.DefaultFetcherRegistry`, and use its type (or provider id override) in config.
 
-## Project layout
-```
-cmd/collector/          # entrypoint
-internal/app/           # collector runtime wiring config, crawler, and plugins
-internal/config         # viper/env config loader
-internal/crawler        # orchestrates provider fetchers + enrichment
-internal/logger         # zap setup and helpers
-pkg/httpclient          # shared HTTP client interfaces + resty adapter
-pkg/providers           # provider registry, fetcher interfaces, provider impls, sitemap helpers
-pkg/publishers          # pluggable sink interfaces + HTTP/SQS implementations
-configs/                # provider and app config examples
-```
+## Publishers
+Publishers live in `configs/publishers.yaml` (YAML or JSON). There are two `type` values:
+- `queue` with `queue.provider`: `aws-sqs`, `aws-sns`, or `gcp`
+- `http` for webhooks
 
-## Contributing
-- Open to PRs and issues; keep changes small and focused.
-- Prefer one file per provider, registered via the fetcher registry to preserve pluggability.
-- Run `gofmt` and `go test ./...` before submitting.
-- Discussions and improvements around storage/backoff are welcome—those layers are intentionally minimal today.
-
-## Configuring publishers
-Publishers live in `configs/publishers.yaml` (same file may also be JSON). Each entry declares a sink and can be toggled individually.
-
+Example covering all kinds:
 ```yaml
 publishers:
-  - id: primary-sqs
-    type: sqs
+  - id: aws-sqs-queue
+    type: queue
     enabled: true
-    sqs:
-      uri: https://sqs.ap-south-1.amazonaws.com/1234567890/link-events
-      region: ap-south-1
-
-  - id: webhook
-    type: http
-    enabled: true
-    http:
-      url: https://example.com/hooks/link-events
-      method: POST          # optional, defaults to POST
-      timeout_seconds: 5    # optional, defaults to 5 seconds
-      headers:
-        X-Api-Key: secret
+    queue:
+      provider: aws-sqs
+      aws:
+        uri: "${AWS_SQS_QUEUE_URL}"
+        region: "${AWS_SQS_REGION}"
+        access_key_id: "${AWS_SQS_ACCESS_KEY_ID}"
+        secret_access_key: "${AWS_SQS_SECRET_ACCESS_KEY}"
 ```
 
-Currently supported publisher types:
-- `http`: Sends JSON payloads via resty client. Custom headers/method/timeouts supported.
-- `sqs`: Sends JSON payloads to AWS SQS with basic message attributes (requires valid AWS creds/resolved env).
-
-Disable a sink by setting `enabled: false`. Unknown/disabled types are ignored so future sinks can be pre-declared.
+Unknown or disabled types are ignored at runtime. Use env expansion in YAML for secrets; never commit real credentials.
 
 ## Storage / deduplication
-Set storage options via env (see `configs/.env`). By default the app uses a lightweight local file cache (`STORAGE_TYPE=bbolt`, `BBOLT_PATH=./data/cache.db`) to remember which article IDs have already been published. Switching `STORAGE_TYPE` to `none` disables dedupe entirely.
+Default storage uses BoltDB (`STORAGE_TYPE=bbolt`, `BBOLT_PATH=./data/cache.db`) to remember published article IDs and skip re-sending. Set `STORAGE_TYPE=none` to disable dedupe. Control retention via `STORAGE_TTL_SECONDS` and cleanup cadence via `STORAGE_CLEANUP_INTERVAL_SECONDS`.
+
+## Development
+- Run `go test ./...` before sending changes (tests are welcome).
+- Keep changes small and focused; one provider per file and register via the fetcher registry to preserve pluggability.
+- Logging uses zap; publishers and providers accept injected clients for easier testing/mocking.
+- Enable the bundled pre-commit hook (runs gofmt on staged Go files): `make hooks`
+
+## Contributing & sharing
+Issues and PRs are very welcome, especially around:
+- New providers (RSS/sitemaps), backoff/retry helpers, scheduler wiring, and non-Bolt storage options.
+- Additional publishers (Azure Service Bus, Kafka, etc.).
+
+Feel free to open an issue before a PR if you want to give or get quick feedback on scope or approach.

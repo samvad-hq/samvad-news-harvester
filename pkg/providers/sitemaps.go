@@ -43,6 +43,14 @@ type googleNewsURL struct {
 	Images []googleNewsImage `xml:"image:image"`
 }
 
+type sitemapIndex struct {
+	Sitemaps []sitemapIndexEntry `xml:"sitemap"`
+}
+
+type sitemapIndexEntry struct {
+	Loc string `xml:"loc"`
+}
+
 type googleNewsDetail struct {
 	PublicationDate string `xml:"publication_date"`
 	Keywords        string `xml:"keywords"`
@@ -61,6 +69,22 @@ func parseGoogleNewsSitemap(data []byte) ([]googleNewsURL, error) {
 		return nil, err
 	}
 	return sitemap.URLs, nil
+}
+
+// parseSitemapIndex parses an XML sitemap index file and returns the nested sitemap URLs.
+func parseSitemapIndex(data []byte) ([]string, error) {
+	var index sitemapIndex
+	if err := xml.Unmarshal(data, &index); err != nil {
+		return nil, err
+	}
+
+	urls := make([]string, 0, len(index.Sitemaps))
+	for _, entry := range index.Sitemaps {
+		if loc := strings.TrimSpace(entry.Loc); loc != "" {
+			urls = append(urls, loc)
+		}
+	}
+	return urls, nil
 }
 
 // buildArticlesFromSitemap constructs domain.Article instances from parsed Google News sitemap URLs.

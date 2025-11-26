@@ -1,10 +1,35 @@
 publishers:
-  - id: primary-sqs
-    type: sqs
+  - id: aws-sqs-queue
+    type: queue
     enabled: true
-    sqs:
-      uri: "https://sqs.ap-south-1.amazonaws.com/1234567890/link-events"
-      region: "ap-south-1"
+    queue:
+      provider: aws-sqs
+      aws:
+        uri: "${AWS_SQS_QUEUE_URL}"
+        region: "${AWS_SQS_REGION}"
+        access_key_id: "${AWS_SQS_ACCESS_KEY_ID}"
+        secret_access_key: "${AWS_SQS_SECRET_ACCESS_KEY}"
+
+  - id: aws-sns-queue
+    type: queue
+    enabled: true
+    queue:
+      provider: aws-sns
+      sns:
+        topic_arn: "${AWS_SNS_TOPIC_ARN}"
+        region: "${AWS_SNS_REGION}"
+        access_key_id: "${AWS_SNS_ACCESS_KEY_ID}"
+        secret_access_key: "${AWS_SNS_SECRET_ACCESS_KEY}"
+
+  - id: gcp-pubsub
+    type: queue
+    enabled: true
+    queue:
+      provider: gcp
+      gcp:
+        project_id: "${GCP_PROJECT_ID}"
+        topic: "${GCP_TOPIC_ID}"
+        credentials_file: "${GCP_CREDENTIALS_FILE}"
 
   - id: webhook
     type: http
@@ -14,7 +39,7 @@ publishers:
       method: POST
       timeout_seconds: 5
       headers:
-        X-Auth-Token: "secret-token"
+        X-Auth-Token: "${WEBHOOK_AUTH_TOKEN}"
 
 
 # Note: Do NOT commit actual credentials into this file. Keep secrets in env or secret manager.
