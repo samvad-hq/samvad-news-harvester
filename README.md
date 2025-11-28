@@ -1,4 +1,4 @@
-# `samvad-news-harvester` 
+# `samvad-news-harvester`
 
 
 [![CI](https://github.com/samvad-hq/samvad-news-harvester/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
@@ -196,3 +196,8 @@ Issues and PRs are welcome — especially for:
 
 If you're unsure about scope, open an issue first — maintainers (me) reply quickly.
 
+---
+
+## License
+
+Licensed under ISC (see `LICENSE`).
