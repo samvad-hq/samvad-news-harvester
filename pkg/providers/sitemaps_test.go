@@ -88,6 +88,34 @@ func TestParseGoogleNewsSitemap(t *testing.T) {
 	}
 }
 
+// Some publisher sitemaps (e.g. The Hindu) contain malformed character
+// entities such as a bare "&K;". Strict XML decoding fails the whole document;
+// the lenient decoder must parse the well-formed entries and leave the bad
+// entity as literal text.
+func TestParseGoogleNewsSitemap_MalformedEntity(t *testing.T) {
+	xml := []byte(`
+<urlset xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://example.com/a</loc>
+    <news:news>
+      <news:publication_date>2024-01-01T00:00:00Z</news:publication_date>
+      <news:title>Bad &K; entity here</news:title>
+    </news:news>
+  </url>
+</urlset>`)
+
+	entries, err := parseGoogleNewsSitemap(xml)
+	if err != nil {
+		t.Fatalf("parseGoogleNewsSitemap should tolerate malformed entities: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 url entry, got %d", len(entries))
+	}
+	if !strings.Contains(entries[0].News.Title, "&K;") {
+		t.Errorf("Title = %q, want the literal &K; preserved", entries[0].News.Title)
+	}
+}
+
 func TestParseSitemapIndex(t *testing.T) {
 	data := []byte(`
 <sitemapindex>

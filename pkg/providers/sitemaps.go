@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1" //nolint:gosec // non-cryptographic id generation
 	"encoding/hex"
@@ -13,6 +14,17 @@ import (
 	"github.com/samvad-hq/samvad-news-harvester/internal/domain"
 	"github.com/samvad-hq/samvad-news-harvester/pkg/httpclient"
 )
+
+// newLenientXMLDecoder returns an xml.Decoder tolerant of the malformed
+// character entities some publisher sitemaps emit. With Strict=false the
+// decoder leaves unknown/invalid entities (e.g. a bare "&K;", seen in The
+// Hindu's Google News sitemap) as literal text instead of failing the entire
+// parse — so one bad entity no longer drops a whole provider's crawl.
+func newLenientXMLDecoder(data []byte) *xml.Decoder {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.Strict = false
+	return dec
+}
 
 // hashURL generates a SHA-1 hash of the given URL string.
 func hashURL(u string) string {
@@ -65,7 +77,7 @@ type googleNewsImage struct {
 // parseGoogleNewsSitemap parses the XML data into a slice of googleNewsURL structs.
 func parseGoogleNewsSitemap(data []byte) ([]googleNewsURL, error) {
 	var sitemap googleNewsSitemap
-	if err := xml.Unmarshal(data, &sitemap); err != nil {
+	if err := newLenientXMLDecoder(data).Decode(&sitemap); err != nil {
 		return nil, err
 	}
 	return sitemap.URLs, nil
@@ -74,7 +86,7 @@ func parseGoogleNewsSitemap(data []byte) ([]googleNewsURL, error) {
 // parseSitemapIndex parses an XML sitemap index file and returns the nested sitemap URLs.
 func parseSitemapIndex(data []byte) ([]string, error) {
 	var index sitemapIndex
-	if err := xml.Unmarshal(data, &index); err != nil {
+	if err := newLenientXMLDecoder(data).Decode(&index); err != nil {
 		return nil, err
 	}
 
