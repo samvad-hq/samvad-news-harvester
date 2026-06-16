@@ -157,14 +157,14 @@ func TestFetchGoogleNewsURLsFollowsIndexes(t *testing.T) {
 		},
 	}
 
-	fetcher := &googleNewsFetcher{client: client}
+	fetcher := &googleNewsFetcher{}
 	cfg := Provider{
 		ID:        "p1",
 		Type:      ProviderTypeGoogleNews,
 		SourceURL: "https://example.com/root.xml",
 	}
 
-	urls, err := fetcher.fetchGoogleNewsURLs(context.Background(), cfg, cfg.SourceURL, nil, nil)
+	urls, err := fetcher.fetchGoogleNewsURLs(context.Background(), client, cfg, cfg.SourceURL, nil, nil)
 	if err != nil {
 		t.Fatalf("fetchGoogleNewsURLs: %v", err)
 	}

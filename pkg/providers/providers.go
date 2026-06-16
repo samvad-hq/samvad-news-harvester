@@ -16,13 +16,17 @@ import (
 
 // Provider represents the configuration for a news provider.
 type Provider struct {
-	ID             string         `json:"id" yaml:"id"`
-	Name           string         `json:"name" yaml:"name"`
-	Type           string         `json:"type" yaml:"type"`
-	SourceURL      string         `json:"source_url" yaml:"source_url"`
-	ResponseFormat string         `json:"response_format" yaml:"response_format"`
-	RequestDelayMs int            `json:"request_delay_ms" yaml:"request_delay_ms"`
-	Config         map[string]any `json:"config" yaml:"config"`
+	ID             string `json:"id" yaml:"id"`
+	Name           string `json:"name" yaml:"name"`
+	Type           string `json:"type" yaml:"type"`
+	SourceURL      string `json:"source_url" yaml:"source_url"`
+	ResponseFormat string `json:"response_format" yaml:"response_format"`
+	RequestDelayMs int    `json:"request_delay_ms" yaml:"request_delay_ms"`
+	// Proxy optionally routes this provider's requests through the given proxy
+	// URL; blank means a direct fetch. Supports ${ENV} expansion so the URL can be
+	// supplied via the environment rather than committed (e.g. proxy: ${PROXY_URL}).
+	Proxy  string         `json:"proxy" yaml:"proxy"`
+	Config map[string]any `json:"config" yaml:"config"`
 }
 
 // registryFile models the structure of the providers file.
@@ -160,6 +164,9 @@ func sanitizeProvider(p Provider) Provider {
 	p.Type = strings.ToLower(strings.TrimSpace(p.Type))
 	p.SourceURL = strings.TrimSpace(p.SourceURL)
 	p.ResponseFormat = strings.TrimSpace(p.ResponseFormat)
+	// Expand ${ENV} so a proxy URL can come from the environment; an unset var
+	// collapses to "" → direct fetch.
+	p.Proxy = strings.TrimSpace(os.ExpandEnv(p.Proxy))
 
 	if p.Config == nil {
 		p.Config = map[string]any{}
