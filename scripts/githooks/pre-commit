@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v gofmt >/dev/null 2>&1; then
+  echo "gofmt not found; install the Go toolchain before committing" >&2
+  exit 1
+fi
+if ! command -v goimports >/dev/null 2>&1; then
+  echo "goimports not found; install with 'go install golang.org/x/tools/cmd/goimports@latest'" >&2
+  exit 1
+fi
+
+mapfile -t go_files < <(git diff --cached --name-only --diff-filter=ACM -- '*.go')
+
+if [[ ${#go_files[@]} -eq 0 ]]; then
+  exit 0
+fi
+
+echo "goimports: formatting staged Go files"
+goimports -w "${go_files[@]}"
+
+echo "gofmt: normalizing staged Go files"
+gofmt -w "${go_files[@]}"
+
+# Re-stage files in case formatters made changes.
+git add "${go_files[@]}"

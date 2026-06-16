@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          check-latest: true
+
+      - name: Install tooling
+        run: |
+          go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Format check (gofmt)
+        run: |
+          fmt_out=$(gofmt -l .)
+          if [ -n "$fmt_out" ]; then
+            echo "gofmt found issues:"
+            echo "$fmt_out"
+            exit 1
+          fi
+
+      - name: Imports check (goimports)
+        run: |
+          imp_out=$(goimports -l .)
+          if [ -n "$imp_out" ]; then
+            echo "goimports found issues:"
+            echo "$imp_out"
+            exit 1
+          fi
+
+      - name: Lint (golangci-lint)
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...

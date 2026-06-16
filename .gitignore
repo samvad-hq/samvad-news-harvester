@@ -1,0 +1,61 @@
+# Go build outputs
+/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency vendor directory
+/vendor/
+
+# Godep directory
+Godeps/
+
+# Go workspace files
+go.work
+go.work.sum
+
+
+
+# Coverage and test profiles
+coverage.out
+*.coverprofile
+
+# Generated files
+*_generated.go
+
+# Logs and env files
+*.log
+.env
+.env.*
+publishers.yaml
+providers.yaml
+
+# Editor and IDE files
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+*~
+*.swp
+
+# Profiling
+*.prof
+
+# Note: do NOT ignore go.mod or go.sum (they should be committed)
+
+.cache/
+__debug_bin*
+
+.gocache/
+
+cache.db
+*.key.json
