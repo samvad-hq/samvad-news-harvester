@@ -87,6 +87,38 @@ func TestFetcherRegistryResolution(t *testing.T) {
 	}
 }
 
+func TestLoadRegistryExpandsProxyEnv(t *testing.T) {
+	t.Setenv("TEST_PROXY_URL", "http://10.0.0.1:8080")
+	dir := t.TempDir()
+	path := writeTempFile(t, dir, "providers.yaml", `
+providers:
+  - id: blocked
+    name: Blocked
+    type: google_news_sitemap
+    source_url: https://example.com
+    response_format: xml
+    proxy: ${TEST_PROXY_URL}
+  - id: open
+    name: Open
+    type: google_news_sitemap
+    source_url: https://example.com
+    response_format: xml
+`)
+
+	reg, err := LoadRegistry(path)
+	if err != nil {
+		t.Fatalf("LoadRegistry: %v", err)
+	}
+	blocked, _ := reg.ByID("blocked")
+	if blocked.Proxy != "http://10.0.0.1:8080" {
+		t.Errorf("proxy env not expanded: %q", blocked.Proxy)
+	}
+	open, _ := reg.ByID("open")
+	if open.Proxy != "" {
+		t.Errorf("unflagged provider should have no proxy, got %q", open.Proxy)
+	}
+}
+
 type stubFetcher struct {
 	id       string
 	articles []string

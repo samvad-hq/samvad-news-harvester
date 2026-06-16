@@ -6,19 +6,19 @@ import (
 	"strings"
 
 	"github.com/samvad-hq/samvad-news-harvester/internal/domain"
+	"github.com/samvad-hq/samvad-news-harvester/pkg/httpclient"
 )
 
 // googleNewsFetcher implements Fetcher for Google News sitemap providers.
 type googleNewsFetcher struct {
-	client HTTPClient
+	clients *httpclient.ProxyCache
 }
 
-// NewGoogleNewsFetcher builds a Fetcher for Google News sitemap providers.
+// NewGoogleNewsFetcher builds a Fetcher for Google News sitemap providers. A nil
+// client defaults to a direct (no-proxy) client; per-provider proxies are
+// resolved at fetch time from the provider config.
 func NewGoogleNewsFetcher(client HTTPClient) Fetcher {
-	if client == nil {
-		client = DefaultHTTPClient()
-	}
-	return &googleNewsFetcher{client: client}
+	return &googleNewsFetcher{clients: httpclient.NewProxyCache(defaultFetchTimeout, client)}
 }
 
 // ID returns the provider type for the Google News fetcher.
@@ -36,8 +36,9 @@ func (f *googleNewsFetcher) Fetch(ctx context.Context, cfg Provider) ([]domain.A
 	}
 
 	headers := Headers(cfg)
+	client := f.clients.For(cfg.Proxy)
 
-	urls, err := f.fetchGoogleNewsURLs(ctx, cfg, cfg.SourceURL, headers, nil)
+	urls, err := f.fetchGoogleNewsURLs(ctx, client, cfg, cfg.SourceURL, headers, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (f *googleNewsFetcher) Fetch(ctx context.Context, cfg Provider) ([]domain.A
 }
 
 // fetchGoogleNewsURLs resolves the given sitemap URL into article entries, following sitemap indexes if necessary.
-func (f *googleNewsFetcher) fetchGoogleNewsURLs(ctx context.Context, cfg Provider, url string, headers map[string]string, visited map[string]struct{}) ([]googleNewsURL, error) {
+func (f *googleNewsFetcher) fetchGoogleNewsURLs(ctx context.Context, client HTTPClient, cfg Provider, url string, headers map[string]string, visited map[string]struct{}) ([]googleNewsURL, error) {
 	if visited == nil {
 		visited = make(map[string]struct{})
 	}
@@ -59,7 +60,7 @@ func (f *googleNewsFetcher) fetchGoogleNewsURLs(ctx context.Context, cfg Provide
 	}
 	visited[url] = struct{}{}
 
-	raw, err := fetchSitemap(ctx, f.client, url, cfg.ID, headers)
+	raw, err := fetchSitemap(ctx, client, url, cfg.ID, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (f *googleNewsFetcher) fetchGoogleNewsURLs(ctx context.Context, cfg Provide
 			continue
 		}
 
-		nested, err := f.fetchGoogleNewsURLs(ctx, cfg, indexURL, headers, visited)
+		nested, err := f.fetchGoogleNewsURLs(ctx, client, cfg, indexURL, headers, visited)
 		if err != nil {
 			return nil, err
 		}

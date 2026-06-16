@@ -5,6 +5,10 @@ providers:
     source_url: https://www.ndtv.com/sitemap/google-news-sitemap
     response_format: xml
     request_delay_ms: 500
+    # Optional: route only this provider's requests through a proxy. Omit for a
+    # direct fetch. Supports ${ENV} expansion so the URL can come from the
+    # environment instead of being committed (see the secrets note below).
+    # proxy: ${PROXY_URL}
     config:
       user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36
       accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8

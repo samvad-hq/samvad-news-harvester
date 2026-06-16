@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -20,6 +21,18 @@ func NewRestyClient(timeout time.Duration) *RestyClient {
 // NewRestyHTTPClient exposes a configured resty.Client for callers needing custom verbs.
 func NewRestyHTTPClient(timeout time.Duration) *resty.Client {
 	return newRestyBaseClient(timeout)
+}
+
+// NewRestyClientWithProxy creates a RestyClient that routes requests through
+// proxyURL. A blank proxyURL yields a plain direct client. The proxy is scoped to
+// this client only — not the process-wide HTTP_PROXY/HTTPS_PROXY env vars — so it
+// leaves all other HTTP traffic in the process untouched.
+func NewRestyClientWithProxy(timeout time.Duration, proxyURL string) *RestyClient {
+	c := newRestyBaseClient(timeout)
+	if strings.TrimSpace(proxyURL) != "" {
+		c.SetProxy(proxyURL)
+	}
+	return &RestyClient{client: c}
 }
 
 // newRestyBaseClient creates a new resty.Client with the specified timeout.

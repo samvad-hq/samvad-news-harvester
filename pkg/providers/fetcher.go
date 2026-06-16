@@ -95,8 +95,11 @@ func (r *fetcherRegistry) FetcherFor(cfg Provider) (Fetcher, error) {
 	return nil, fmt.Errorf("no fetcher registered for provider %q (type %q)", cfg.ID, cfg.Type)
 }
 
+// defaultFetchTimeout bounds every provider fetch (direct or proxied).
+const defaultFetchTimeout = 15 * time.Second
+
 // DefaultHTTPClient returns a tuned http.Client for provider fetchers.
-func DefaultHTTPClient() HTTPClient { return httpclient.NewRestyClient(15 * time.Second) }
+func DefaultHTTPClient() HTTPClient { return httpclient.NewRestyClient(defaultFetchTimeout) }
 
 const ProviderTypeGoogleNews = "google_news_sitemap"
 
