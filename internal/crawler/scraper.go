@@ -22,21 +22,24 @@ const (
 	maxArticleWorkers = 10
 )
 
+// scrapeHTTPTimeout bounds each article-page fetch (direct or proxied).
+const scrapeHTTPTimeout = 15 * time.Second
+
 // Scraper fetches and enriches article metadata by scraping HTML pages.
 type Scraper struct {
-	client httpclient.Client
-	log    logger.Logger
+	clients *httpclient.ProxyCache
+	log     logger.Logger
 }
 
-// NewScraper creates a new Scraper with the given HTTP client and logger.
+// NewScraper creates a new Scraper with the given direct HTTP client and logger.
+// client is the no-proxy client (nil → a default one is built); per-provider
+// proxies are resolved at fetch time from cfg.Proxy, so a blocked outlet's
+// metadata scrape egresses through its proxy just like the sitemap fetch does.
 func NewScraper(client httpclient.Client, log logger.Logger) *Scraper {
-	if client == nil {
-		client = providers.DefaultHTTPClient()
-	}
 	if log == nil {
 		log = logger.NopLogger{}
 	}
-	return &Scraper{client: client, log: log}
+	return &Scraper{clients: httpclient.NewProxyCache(scrapeHTTPTimeout, client), log: log}
 }
 
 // Enrich enriches the given articles by scraping their HTML pages for metadata.
@@ -131,7 +134,7 @@ func (s *Scraper) fetchAndParse(ctx context.Context, cfg providers.Provider, art
 		"url":         art.URL,
 	})
 
-	resp, err := s.client.Get(ctx, art.URL, headers)
+	resp, err := s.clients.For(cfg.Proxy).Get(ctx, art.URL, headers)
 	if err != nil {
 		return art, fmt.Errorf("http fetch: %w", err)
 	}
