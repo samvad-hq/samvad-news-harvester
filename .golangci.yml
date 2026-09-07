@@ -1,0 +1,40 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - errorlint
+    - gofmt
+    - goimports
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - revive
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        arguments: ["checkPrivateReceivers"]
+      - name: package-comments
+      - name: error-strings
+      - name: error-naming
+      - name: var-naming
+      - name: indent-error-flow
+      - name: context-as-argument
+      - name: receiver-naming
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - unparam

@@ -1,4 +1,4 @@
-.PHONY: build run test tidy format hooks
+.PHONY: build run test race lint fmt tidy hooks
 
 build:
 	go build ./...
@@ -9,14 +9,18 @@ run:
 test:
 	go test ./...
 
-tidy:
-	go mod tidy
-
-format:
-	gofmt -w $(shell find . -name '*.go' -not -path './vendor/*')
-
-hooks:
-	git config core.hooksPath scripts/githooks
+race:
+	go test -race ./...
 
 lint:
 	go vet ./...
+	golangci-lint run
+
+fmt:
+	gofmt -w .
+
+tidy:
+	go mod tidy
+
+hooks:
+	git config core.hooksPath scripts/githooks
