@@ -1,0 +1,31 @@
+# The Go patch version is pinned in CI, in the Dockerfile and in go.mod's
+# toolchain directive. A pin that nobody bumps is how a build ends up on a
+# release with known standard-library vulnerabilities, which is exactly
+# what govulncheck caught here — so the pins are watched rather than
+# trusted to age well.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the routine upgrades. Anything with a breaking change
+      # still arrives on its own.
+      go-dependencies:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

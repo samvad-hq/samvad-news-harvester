@@ -1,0 +1,54 @@
+# golangci-lint v2 configuration.
+#
+# The exclusion presets v2 enables by default are deliberately absent. The
+# "comments" preset in particular suppresses revive's missing-doc-comment
+# findings, and this codebase documents every package and every exported
+# identifier on purpose — see docs/decisions.md. Turning that check off
+# would remove the only thing enforcing it.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - errorlint
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - revive
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+  settings:
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+        - name: package-comments
+        - name: error-strings
+        - name: error-naming
+        - name: var-naming
+        - name: indent-error-flow
+        - name: context-as-argument
+        - name: receiver-naming
+  exclusions:
+    # Test files may take shortcuts the production code may not: hardcoded
+    # credentials in fixtures are not secrets, and an unused parameter in a
+    # fake is how it satisfies an interface.
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

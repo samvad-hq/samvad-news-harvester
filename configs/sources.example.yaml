@@ -1,0 +1,173 @@
+# Sources the harvester crawls. Copy to configs/sources.yaml and edit.
+#
+# Only news sitemaps are supported. They are published for crawler
+# consumption and advertised from robots.txt, which RSS feeds generally
+# are not — many publishers restrict feeds to personal, non-commercial use.
+#
+# Three of these (ndtv, firstpost, telegraphindia) answered 403 to a direct
+# request when this file was written. Set a proxy on those entries if you
+# need them.
+
+sources:
+  - id: thehindu
+    name: The Hindu
+    type: news_sitemap
+    url: https://www.thehindu.com/sitemap/googlenews/all/all.xml
+    headers: &default_headers
+      user_agent: "Mozilla/5.0 (compatible; samvad-harvester/2.0; +https://github.com/samvad-hq/samvad-news-harvester)"
+      accept: application/xml,text/xml;q=0.9,*/*;q=0.8
+      accept_language: en-IN,en;q=0.9
+
+  - id: toi
+    name: Times of India
+    type: news_sitemap
+    url: https://timesofindia.indiatimes.com/sitemap/today
+    headers: *default_headers
+
+  - id: indianexpress
+    name: The Indian Express
+    type: news_sitemap
+    url: https://indianexpress.com/news-sitemap.xml
+    headers: *default_headers
+
+  - id: hindustantimes
+    name: Hindustan Times
+    type: news_sitemap
+    url: https://www.hindustantimes.com/sitemap/news.xml
+    headers: *default_headers
+
+  - id: economictimes
+    name: The Economic Times
+    type: news_sitemap
+    url: https://economictimes.indiatimes.com/sitemap/today
+    headers: *default_headers
+
+  - id: financialexpress
+    name: Financial Express
+    type: news_sitemap
+    url: https://www.financialexpress.com/news-sitemap.xml
+    headers: *default_headers
+
+  - id: livemint
+    name: Mint
+    type: news_sitemap
+    url: https://www.livemint.com/sitemap/today.xml
+    headers: *default_headers
+
+  - id: news18
+    name: News18
+    type: news_sitemap
+    url: https://www.news18.com/commonfeeds/v1/eng/sitemap/google-news/today.xml
+    headers: *default_headers
+
+  # Answered 403 to a direct request on 2026-09-06. Set a proxy to use it.
+  - id: firstpost
+    name: Firstpost
+    type: news_sitemap
+    url: https://www.firstpost.com/commonfeeds/v1/mfp/sitemap/google-news.xml
+    headers: *default_headers
+
+  - id: scroll
+    name: Scroll.in
+    type: news_sitemap
+    url: https://scroll.in/sitemap/news-sitemap.xml
+    headers: *default_headers
+
+  - id: thequint
+    name: The Quint
+    type: news_sitemap
+    url: https://www.thequint.com/sitemap/today
+    headers: *default_headers
+
+  - id: thenewsminute
+    name: The News Minute
+    type: news_sitemap
+    url: https://www.thenewsminute.com/news_sitemap.xml
+    headers: *default_headers
+
+  # Answered 403 to a direct request on 2026-09-06. Set a proxy to use it.
+  - id: telegraphindia
+    name: The Telegraph India
+    type: news_sitemap
+    url: https://www.telegraphindia.com/news-sitemap.xml
+    headers: *default_headers
+
+  - id: newindianexpress
+    name: The New Indian Express
+    type: news_sitemap
+    url: https://www.newindianexpress.com/news_sitemap.xml
+    headers: *default_headers
+
+  - id: deccanherald
+    name: Deccan Herald
+    type: news_sitemap
+    url: https://www.deccanherald.com/news_sitemap.xml
+    headers: *default_headers
+
+  - id: deccanchronicle
+    name: Deccan Chronicle
+    type: news_sitemap
+    url: https://www.deccanchronicle.com/news-sitemap-daily.xml
+    headers: *default_headers
+
+  - id: tribuneindia
+    name: The Tribune
+    type: news_sitemap
+    url: https://www.tribuneindia.com/sitemap-news.xml
+    headers: *default_headers
+
+  - id: freepressjournal
+    name: The Free Press Journal
+    type: news_sitemap
+    url: https://www.freepressjournal.in/news-sitemap.xml
+    headers: *default_headers
+
+  - id: thehansindia
+    name: The Hans India
+    type: news_sitemap
+    url: https://www.thehansindia.com/news-sitemap-daily.xml
+    headers: *default_headers
+
+  - id: telanganatoday
+    name: Telangana Today
+    type: news_sitemap
+    url: https://telanganatoday.com/news-sitemap.xml
+    headers: *default_headers
+
+  - id: dtnext
+    name: DT Next
+    type: news_sitemap
+    url: https://www.dtnext.in/news_sitemap.xml
+    headers: *default_headers
+
+  - id: greaterkashmir
+    name: Greater Kashmir
+    type: news_sitemap
+    url: https://www.greaterkashmir.com/news-sitemap.xml
+    headers: *default_headers
+
+  - id: nenow
+    name: North East Now
+    type: news_sitemap
+    url: https://nenow.in/news-sitemap.xml
+    headers: *default_headers
+
+  - id: downtoearth
+    name: Down To Earth
+    type: news_sitemap
+    url: https://www.downtoearth.org.in/news_sitemap.xml
+    headers: *default_headers
+
+  - id: thedailyjagran
+    name: The Daily Jagran
+    type: news_sitemap
+    url: https://www.thedailyjagran.com/news-sitemap.xml
+    headers: *default_headers
+
+  # Answered 403 to a direct request on 2026-09-06. Set a proxy to use it.
+  - id: ndtv
+    name: NDTV
+    type: news_sitemap
+    url: https://www.ndtv.com/sitemap/google-news-sitemap
+    # proxy: ${PROXY_URL}
+    headers: *default_headers

@@ -1,0 +1,61 @@
+# Where the harvester delivers events. Copy to configs/sinks.yaml and edit.
+#
+# Delivery is at-least-once. An article is recorded as seen only once every
+# enabled sink has accepted it, so a sink that was down when its neighbours
+# succeeded will receive the event again on the next crawl. Key on
+# article.id.
+#
+# Credentials belong in the environment and are referenced as ${VAR}.
+# An unset variable expands to an empty string, which fails validation at
+# startup with the field named — never silently.
+#
+# The four cloud sinks below are commented out. Every entry is validated
+# even when enabled: false, so a block with unset ${VAR}s fails at startup
+# by design rather than the first time someone flips it on. To use one:
+# uncomment its block, set the environment variables it names, and change
+# enabled to true.
+
+sinks:
+  # The default. No credentials, no network: clone the repo, run it, and
+  # watch articles appear on stdout.
+  - id: local-log
+    type: log
+    enabled: true
+    log:
+      level: info
+
+  # - id: webhook
+  #   type: http
+  #   enabled: false
+  #   http:
+  #     url: ${WEBHOOK_URL}
+  #     method: POST
+  #     timeout: 10s
+  #     headers:
+  #       Authorization: "Bearer ${WEBHOOK_AUTH_TOKEN}"
+
+  # - id: aws-sqs
+  #   type: aws-sqs
+  #   enabled: false
+  #   sqs:
+  #     queue_url: ${AWS_SQS_QUEUE_URL}
+  #     region: ${AWS_SQS_REGION}
+  #     access_key_id: ${AWS_SQS_ACCESS_KEY_ID}
+  #     secret_access_key: ${AWS_SQS_SECRET_ACCESS_KEY}
+
+  # - id: aws-sns
+  #   type: aws-sns
+  #   enabled: false
+  #   sns:
+  #     topic_arn: ${AWS_SNS_TOPIC_ARN}
+  #     region: ${AWS_SNS_REGION}
+  #     access_key_id: ${AWS_SNS_ACCESS_KEY_ID}
+  #     secret_access_key: ${AWS_SNS_SECRET_ACCESS_KEY}
+
+  # - id: gcp-pubsub
+  #   type: gcp-pubsub
+  #   enabled: false
+  #   pubsub:
+  #     project_id: ${GCP_PROJECT_ID}
+  #     topic: ${GCP_TOPIC_ID}
+  #     credentials_file: ${GCP_CREDENTIALS_FILE}

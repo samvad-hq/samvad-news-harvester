@@ -30,8 +30,8 @@ coverage.out
 *.log
 .env
 .env.*
-publishers.yaml
-providers.yaml
+sinks.yaml
+sources.yaml
 
 # Editor and IDE files
 .idea/
@@ -57,5 +57,16 @@ __debug_bin*
 
 .gocache/
 
-cache.db
+dedupe.db
 *.key.json
+# Agent skills (installed via `npx skills add`, not part of the Go module)
+.agents/
+.claude/skills/
+skills-lock.json
+
+# Design and planning notes (kept locally, not published)
+docs/design/
+
+# Editor settings are personal; the shared debug targets are not.
+.vscode/*
+!.vscode/launch.json
