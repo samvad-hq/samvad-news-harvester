@@ -174,6 +174,21 @@ no recorded test fixture. The remedy is the per-source `proxy` field:
 `${VAR}` is expanded from the environment at load time, so the proxy URL
 itself never needs to be committed.
 
+**A proxy addresses IP reputation, which is usually what is being
+refused.** These publishers sit behind bot-management services that score
+the requesting address, and a datacenter IP — a GCP or Railway egress, for
+instance — is scored differently from a residential one. A residential
+proxy is the practical remedy, and is why the `proxy` field exists.
+
+It does not disguise the TLS handshake. `internal/httpx` uses Go's
+standard `net/http`, so the ClientHello it sends carries Go's default
+cipher and extension ordering, which is a stable JA3/JA4 signature that
+does not resemble any browser's. A publisher fingerprinting at that layer
+can still refuse a request that arrives from a clean address. Nothing in
+the Go standard library changes this; it would take a client that builds
+its own ClientHello. That is not something this service does today, and
+adding it is not currently planned.
+
 ## Adding a source type
 
 `Fetcher` is not a Go interface you import. Write a concrete type with a

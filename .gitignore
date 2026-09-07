@@ -63,3 +63,6 @@ dedupe.db
 .agents/
 .claude/skills/
 skills-lock.json
+
+# Design and planning notes (kept locally, not published)
+docs/design/

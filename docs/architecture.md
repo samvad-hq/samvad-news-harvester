@@ -310,9 +310,9 @@ a concrete type with exported methods, called directly.
   though `httpx.Response` already carries the `ETag` and `Last-Modified`
   validators that would make a conditional request possible.
 
-These are not oversights; they are the out-of-scope list the rewrite was
-scoped against, in
-[`docs/design/harvester-v2-design.md`](design/harvester-v2-design.md) (section 12,
-"Explicitly out of scope"). Conditional GET, `<lastmod>`-based skipping,
-and a `harvester discover` subcommand are the next feature work in that
-document's stated order, followed by metrics and the outbox.
+These are not oversights. Each was considered and deliberately deferred
+when the rewrite was scoped, so that the rewrite changed how the service
+is built without also changing what it does. Conditional GET,
+`<lastmod>`-based skipping and a `harvester discover` subcommand are the
+next feature work, in that order, followed by metrics and an outbox with
+retry and a dead-letter queue.

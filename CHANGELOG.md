@@ -12,10 +12,7 @@ followed it. **This release is breaking**: every environment variable,
 both configuration file schemas, two event field names, and the article
 ID derivation all changed. See
 [docs/configuration.md](docs/configuration.md#migration-from-v1) for the
-complete v1-to-v2 mapping, and
-[docs/design/harvester-v2-design.md](docs/design/harvester-v2-design.md)
-for the design the rewrite implements and its explicitly out-of-scope
-list.
+complete v1-to-v2 mapping.
 
 ### Added
 
