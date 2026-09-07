@@ -2,6 +2,8 @@ module github.com/samvad-hq/samvad-news-harvester
 
 go 1.25.0
 
+toolchain go1.25.14
+
 require (
 	cloud.google.com/go/pubsub v1.44.0
 	github.com/PuerkitoBio/goquery v1.11.0

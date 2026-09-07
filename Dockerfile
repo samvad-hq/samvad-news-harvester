@@ -1,5 +1,5 @@
 # Build the binary against the exact Go version CI pins.
-FROM golang:1.25.0-alpine AS build
+FROM golang:1.25.14-alpine AS build
 
 # tzdata is not in the base image; it is copied into the final stage so an
 # operator can set TZ and have log timestamps mean what they say.

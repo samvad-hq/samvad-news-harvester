@@ -31,6 +31,14 @@ complete v1-to-v2 mapping.
 - **`govulncheck` in CI**, as its own job so a vulnerability disclosure
   fails separately from a broken build. It reports only vulnerabilities
   this code can actually reach, not everything in the dependency tree.
+  Its first run earned its place immediately: it failed on 28 standard
+  library vulnerabilities, because CI was pinned to Go 1.25.0 — the
+  release, not the line. The Go patch version is now pinned to 1.25.14 in
+  CI, in the Dockerfile and in go.mod's `toolchain` directive.
+- **Dependabot** for Go modules, GitHub Actions and the Docker base
+  image, weekly and grouped. A pinned patch version that nobody bumps is
+  how a build ends up on a release with known vulnerabilities, which is
+  the failure above.
 - **`SECURITY.md`** — private reporting, what the service treats as
   untrusted (publisher XML) versus trusted (operator configuration), the
   protections in place, and their known limits.
