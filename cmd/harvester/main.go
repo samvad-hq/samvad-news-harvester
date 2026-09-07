@@ -75,7 +75,7 @@ func run(validateOnly, once bool) error {
 		}
 	}()
 
-	deduper, closeDeduper, err := openDeduper(cfg)
+	deduper, closeDeduper, err := openDeduper(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -134,15 +134,27 @@ func run(validateOnly, once bool) error {
 const maxArticleBodyBytes int64 = 1 << 20
 
 // openDeduper builds the configured dedupe store and its closer.
-func openDeduper(cfg *config.Config) (harvest.Deduper, func() error, error) {
-	if cfg.DedupeBackend == config.DedupeNone {
+//
+// Config.Validate has already rejected any backend name that is not one of
+// these three, and has checked that the fields each one needs are present.
+func openDeduper(ctx context.Context, cfg *config.Config) (harvest.Deduper, func() error, error) {
+	switch cfg.DedupeBackend {
+	case config.DedupeNone:
 		var store dedupe.Noop
 		return store, store.Close, nil
-	}
 
-	store, err := dedupe.OpenBolt(cfg.DedupePath, cfg.DedupeTTL, cfg.DedupeCleanupInterval)
-	if err != nil {
-		return nil, nil, err
+	case config.DedupeRedis:
+		store, err := dedupe.OpenRedis(ctx, cfg.DedupeRedisURL, cfg.DedupeTTL)
+		if err != nil {
+			return nil, nil, err
+		}
+		return store, store.Close, nil
+
+	default:
+		store, err := dedupe.OpenBolt(cfg.DedupePath, cfg.DedupeTTL, cfg.DedupeCleanupInterval)
+		if err != nil {
+			return nil, nil, err
+		}
+		return store, store.Close, nil
 	}
-	return store, store.Close, nil
 }

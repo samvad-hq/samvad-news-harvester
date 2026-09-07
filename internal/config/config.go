@@ -21,8 +21,9 @@ import (
 
 // Dedupe backend names accepted by DEDUPE_BACKEND.
 const (
-	DedupeBolt = "bolt"
-	DedupeNone = "none"
+	DedupeBolt  = "bolt"
+	DedupeRedis = "redis"
+	DedupeNone  = "none"
 )
 
 // Config is the harvester's runtime configuration.
@@ -53,6 +54,10 @@ type Config struct {
 	DedupeBackend string
 	// DedupePath is the bbolt file, required when the backend is bolt.
 	DedupePath string
+	// DedupeRedisURL addresses the Redis instance, required when the
+	// backend is redis. It routinely carries a password, so no error in
+	// this service ever quotes it.
+	DedupeRedisURL string
 	// DedupeTTL is how long an article ID is remembered.
 	DedupeTTL time.Duration
 	// DedupeCleanupInterval is how often expired IDs are swept.
@@ -83,6 +88,9 @@ func Load() (*Config, error) {
 		SinksFile:     envIfSetElseDefault("SINKS_FILE", "./configs/sinks.yaml"),
 		DedupeBackend: strings.ToLower(env("DEDUPE_BACKEND", DedupeBolt)),
 		DedupePath:    envIfSetElseDefault("DEDUPE_PATH", "./data/dedupe.db"),
+		// No default: an unset URL is only a problem for the redis
+		// backend, and Validate is where that is decided.
+		DedupeRedisURL: env("DEDUPE_REDIS_URL", ""),
 	}
 
 	get(func() (err error) { cfg.LogLevel, err = envLevel("LOG_LEVEL", slog.LevelInfo); return })
@@ -156,9 +164,18 @@ func (c *Config) Validate() error {
 		if c.DedupeCleanupInterval <= 0 {
 			errs = append(errs, errors.New("DEDUPE_CLEANUP_INTERVAL must be positive"))
 		}
+	case DedupeRedis:
+		if strings.TrimSpace(c.DedupeRedisURL) == "" {
+			errs = append(errs, errors.New("DEDUPE_REDIS_URL is required when DEDUPE_BACKEND is redis"))
+		}
+		if c.DedupeTTL <= 0 {
+			errs = append(errs, errors.New("DEDUPE_TTL must be positive"))
+		}
+		// DEDUPE_CLEANUP_INTERVAL is deliberately not checked: Redis
+		// expires keys itself, so this backend has no sweeper to schedule.
 	default:
-		errs = append(errs, fmt.Errorf("DEDUPE_BACKEND %q is not supported (use %q or %q)",
-			c.DedupeBackend, DedupeBolt, DedupeNone))
+		errs = append(errs, fmt.Errorf("DEDUPE_BACKEND %q is not supported (use %q, %q or %q)",
+			c.DedupeBackend, DedupeBolt, DedupeRedis, DedupeNone))
 	}
 
 	return errors.Join(errs...)

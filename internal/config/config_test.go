@@ -83,6 +83,7 @@ func TestLoadRejectsBadValues(t *testing.T) {
 		{name: "zero per-host rate", key: "PER_HOST_RPS", value: "0"},
 		{name: "unparseable delivery concurrency", key: "DELIVERY_CONCURRENCY", value: "some"},
 		{name: "zero delivery concurrency", key: "DELIVERY_CONCURRENCY", value: "0"},
+		{name: "unknown dedupe backend names the valid ones", key: "DEDUPE_BACKEND", value: "memcached"},
 	}
 
 	for _, tt := range tests {
@@ -137,4 +138,50 @@ func TestExplicitlyEmptySourcesFileIsError(t *testing.T) {
 	_, err := config.Load()
 	require.Error(t, err)
 	require.ErrorContains(t, err, "SOURCES_FILE")
+}
+
+// The redis backend needs a URL and a TTL, and deliberately does not need
+// a cleanup interval: Redis expires keys itself, so there is no sweeper to
+// schedule. Bolt still requires all three.
+func TestRedisBackendValidation(t *testing.T) {
+	t.Run("rejects a missing url", func(t *testing.T) {
+		t.Setenv("DEDUPE_BACKEND", "redis")
+		_, err := config.Load()
+		require.ErrorContains(t, err, "DEDUPE_REDIS_URL")
+	})
+
+	t.Run("accepts a url", func(t *testing.T) {
+		t.Setenv("DEDUPE_BACKEND", "redis")
+		t.Setenv("DEDUPE_REDIS_URL", "redis://localhost:6379/0")
+
+		cfg, err := config.Load()
+		require.NoError(t, err)
+		require.Equal(t, config.DedupeRedis, cfg.DedupeBackend)
+		require.Equal(t, "redis://localhost:6379/0", cfg.DedupeRedisURL)
+	})
+
+	t.Run("does not require a cleanup interval", func(t *testing.T) {
+		t.Setenv("DEDUPE_BACKEND", "redis")
+		t.Setenv("DEDUPE_REDIS_URL", "redis://localhost:6379/0")
+		t.Setenv("DEDUPE_CLEANUP_INTERVAL", "0s")
+
+		_, err := config.Load()
+		require.NoError(t, err, "redis has no sweeper, so the interval is irrelevant to it")
+	})
+
+	t.Run("bolt still requires a cleanup interval", func(t *testing.T) {
+		t.Setenv("DEDUPE_BACKEND", "bolt")
+		t.Setenv("DEDUPE_CLEANUP_INTERVAL", "0s")
+
+		_, err := config.Load()
+		require.ErrorContains(t, err, "DEDUPE_CLEANUP_INTERVAL")
+	})
+
+	t.Run("an unknown backend names every valid one", func(t *testing.T) {
+		t.Setenv("DEDUPE_BACKEND", "memcached")
+		_, err := config.Load()
+		require.ErrorContains(t, err, "bolt")
+		require.ErrorContains(t, err, "redis")
+		require.ErrorContains(t, err, "none")
+	})
 }

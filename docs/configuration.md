@@ -22,10 +22,11 @@ once, rather than one restart per mistake.
 | `ARTICLE_CONCURRENCY` | `10` | How many article metadata fetches run at once, per source. |
 | `DELIVERY_CONCURRENCY` | `8` | How many of one source's articles are delivered to the sinks at once. Set it to `1` for a sink that cannot take parallel writes or is aggressively rate-limited. |
 | `PER_HOST_RPS` | `2` | Requests per second allowed to any one hostname, shared across every source and article fetch to that host. |
-| `DEDUPE_BACKEND` | `bolt` | `bolt` to persist delivered article IDs to disk, or `none` to disable deduplication (every crawl republishes everything). |
+| `DEDUPE_BACKEND` | `bolt` | `bolt` (a local file), `redis` (an external instance), or `none` to disable deduplication so every crawl republishes everything. See [Choosing a dedupe backend](#choosing-a-dedupe-backend). |
 | `DEDUPE_PATH` | `./data/dedupe.db` | The bbolt file. Required (and validated) only when `DEDUPE_BACKEND=bolt`. |
-| `DEDUPE_TTL` | `120h` | How long a delivered article ID is remembered before it is eligible to be forgotten and, if seen again, redelivered. |
-| `DEDUPE_CLEANUP_INTERVAL` | `12h` | How often expired IDs are swept from the store. |
+| `DEDUPE_REDIS_URL` | — | `redis://host:port/db` or `rediss://` for TLS; may carry a username and password. Required (and validated) only when `DEDUPE_BACKEND=redis`. |
+| `DEDUPE_TTL` | `120h` | How long a delivered article ID is remembered before it is eligible to be forgotten and, if seen again, redelivered. Required by both the `bolt` and `redis` backends. |
+| `DEDUPE_CLEANUP_INTERVAL` | `12h` | How often expired IDs are swept from the store. Applies to `bolt` only — Redis expires keys itself, so the `redis` backend has no sweeper and ignores this. |
 | `FETCH_TIMEOUT` | `30s` | Per-request timeout for one sitemap fetch. |
 | `SCRAPE_TIMEOUT` | `15s` | Per-request timeout for one article metadata fetch. |
 
@@ -38,6 +39,46 @@ exception: an explicitly-set-but-empty value (`SOURCES_FILE=` in the
 environment) is preserved as empty rather than falling back to the
 default, so that `Validate` can reject it by name instead of silently
 using the default file.
+
+## Choosing a dedupe backend
+
+The dedupe store answers one question — has this article already been
+delivered? — and all three backends answer it identically. They differ
+only in where the answer lives.
+
+| | `bolt` | `redis` | `none` |
+|---|---|---|---|
+| Where state lives | a file on local disk | an external Redis instance | nowhere |
+| Survives a redeploy | only with a persistent volume | yes | n/a |
+| Extra infrastructure | none | a Redis instance | none |
+| Expiry | swept on a schedule (`DEDUPE_CLEANUP_INTERVAL`) | Redis expires keys itself | n/a |
+| Cost per source | one read transaction, one write transaction | one `MGET`, one pipelined write | none |
+
+**`bolt` is the default and the right choice on a host with a persistent
+disk.** It needs nothing else running and keeps the whole service to one
+process.
+
+**Use `redis` when the filesystem is ephemeral.** Container platforms that
+give you a fresh filesystem on every deploy — Cloud Run, Railway and
+similar — lose the bbolt file each time, and the next crawl then
+republishes every article as if it had never been seen. Redis is state
+that outlives the container. Keys are written as
+`dedupe:article:<article id>` with `DEDUPE_TTL` as their expiry, so an
+instance shared with other services stays namespaced and needs no
+maintenance.
+
+**`redis` does not make the harvester horizontally scalable.** Delivery is
+marked after the fact rather than claimed before it, so two harvester
+processes sharing one Redis can both read an article as unseen before
+either delivers it, and both will deliver it. That is the same
+at-least-once contract the service already has — consumers key on
+`article.id` — but it is not the exactly-once coordination a shared store
+might suggest, and running more than one instance is not a supported
+configuration today.
+
+**`none` disables deduplication entirely.** Every crawl redelivers every
+article every source lists. It exists for testing a sink, and for the case
+where the consumer deduplicates and would rather not run a store at all.
 
 ## URL canonicalisation
 
@@ -239,6 +280,7 @@ Every other setting has a direct v1-to-v2 rename:
 | `PUBLISHERS_FILE` | `SINKS_FILE` |
 | `CRAWL_INTERVAL=900` (seconds) | `CRAWL_INTERVAL=15m` (duration string) |
 | `STORAGE_TYPE=bbolt` | `DEDUPE_BACKEND=bolt` |
+| — (no equivalent) | `DEDUPE_BACKEND=redis` with `DEDUPE_REDIS_URL` |
 | `STORAGE_TYPE=none` | `DEDUPE_BACKEND=none` |
 | `BBOLT_PATH` | `DEDUPE_PATH` |
 | `STORAGE_TTL_SECONDS=432000` | `DEDUPE_TTL=120h` |

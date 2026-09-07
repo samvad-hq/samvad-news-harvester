@@ -23,6 +23,16 @@ complete v1-to-v2 mapping.
 - **`docs/configuration.md`** — the full environment variable table, both
   YAML schemas, the URL canonicalisation rules, and the v1-to-v2
   migration table.
+- **A Redis dedupe backend**, selected with `DEDUPE_BACKEND=redis` and
+  `DEDUPE_REDIS_URL`. It exists for hosts with an ephemeral filesystem —
+  Cloud Run, Railway and similar lose the bbolt file on every redeploy, and
+  the next crawl then republishes every article as if it had never been
+  seen. Keys are `dedupe:article:<article id>` and carry `DEDUPE_TTL` as
+  their own expiry, so this backend has no sweeper and ignores
+  `DEDUPE_CLEANUP_INTERVAL`. A batch costs one `MGET` and one pipelined
+  write per source, matching bolt's one-transaction-per-source shape. It
+  does not make the harvester horizontally scalable; see
+  [docs/configuration.md](docs/configuration.md#choosing-a-dedupe-backend).
 - **`DELIVERY_CONCURRENCY`** (default `8`) bounds how many of one
   source's articles are delivered to the sinks at once. Set it to `1` for
   a sink that is aggressively rate-limited.

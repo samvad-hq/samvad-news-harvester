@@ -114,13 +114,24 @@ canonicalisation rules.
 
 ### 3. Dedupe
 
-**Package:** `internal/dedupe` (`Bolt.Unseen` / `Noop.Unseen`)
+**Package:** `internal/dedupe` (`Bolt.Unseen` / `Redis.Unseen` /
+`Noop.Unseen`)
 
-The whole batch of IDs from one source is checked in a single bbolt read
-transaction (`db.View`), not one transaction per article. bbolt allows only
-one writer at a time but any number of concurrent readers, so a read
-transaction here does not block the sitemap fetch or the scrape stage of
-any other source running concurrently.
+The whole batch of IDs from one source is checked in one operation, not one
+per article — that per-article cost was the throughput ceiling of the
+previous implementation.
+
+For `Bolt` that operation is a single read transaction (`db.View`). bbolt
+allows only one writer at a time but any number of concurrent readers, so a
+read here does not block the sitemap fetch or the scrape stage of any other
+source running concurrently.
+
+For `Redis` it is a single `MGET`, chunked at 1000 keys so no one command
+grows unbounded on a source listing thousands of URLs. Keys carry
+`DEDUPE_TTL` as their own expiry, so this backend has no sweeper — the
+`Cleanup` machinery is bolt's alone. See
+[configuration.md](configuration.md#choosing-a-dedupe-backend) for which
+backend to run and why.
 
 ### 4. Enrich
 
@@ -150,8 +161,9 @@ therefore excluded from future crawls — only when every sink accepted it;
 see
 [the README](../README.md#delivery-is-at-least-once) for the consumer
 contract this creates. IDs that were fully delivered are marked in one
-bbolt write transaction per source (`Deduper.Mark`), for the same reason
-reads are batched: one fsync per source rather than one per article.
+call per source (`Deduper.Mark`), for the same reason reads are batched:
+one bbolt write transaction — and so one fsync — per source rather than
+one per article, or one pipelined round trip when the backend is Redis.
 
 **A sink no longer receives one source's articles in sitemap order.**
 Delivering them concurrently means completion order is arbitrary, so a
@@ -262,15 +274,16 @@ They fall into three groups, by why each one exists.
 |---|---|---|
 | `sink.Sink` | `internal/sink/sink.go`, next to `Fanout` | Five concrete types (`Log`, `HTTP`, `SQS`, `SNS`, `PubSub`) are selected from `configs/sinks.yaml` at startup, and `Fanout` has to hold a slice of whichever were configured. This is the one interface exported for genuine runtime polymorphism. |
 
-**Five consumer-declared test seams**, each with exactly one production
-implementation, existing solely so the consuming package's tests can
-substitute a fake instead of doing real I/O:
+**Five consumer-declared test seams**, each existing so the consuming
+package's tests can substitute a fake instead of doing real I/O. Four have
+exactly one production implementation; `harvest.Deduper` has three, which
+earns it on runtime-polymorphism grounds as well:
 
 | Interface | Declared in | Production implementation |
 |---|---|---|
 | `harvest.Fetcher` | `internal/harvest/harvest.go` | `source.Sitemap` |
 | `harvest.Enricher` | `internal/harvest/harvest.go` | `enrich.Scraper` |
-| `harvest.Deduper` | `internal/harvest/harvest.go` | `dedupe.Bolt` (and `dedupe.Noop` for `DEDUPE_BACKEND=none` — two implementations, which is itself a reason beyond the test seam) |
+| `harvest.Deduper` | `internal/harvest/harvest.go` | `dedupe.Bolt`, `dedupe.Redis` and `dedupe.Noop`, selected by `DEDUPE_BACKEND` — three implementations chosen at runtime, which is a reason beyond the test seam |
 | `sink.sqsAPI` | `internal/sink/sqs.go` | `*sqs.Client` from `aws-sdk-go-v2`, narrowed to the one `SendMessage` call the sink makes |
 | `sink.snsAPI` | `internal/sink/sns.go` | `*sns.Client` from `aws-sdk-go-v2`, narrowed to the one `Publish` call the sink makes |
 
