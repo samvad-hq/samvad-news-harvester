@@ -130,8 +130,9 @@ nothing supplied them.
 
 Everything is environment variables plus two YAML (or JSON) files:
 `configs/sources.yaml` (what to crawl) and `configs/sinks.yaml` (where to
-deliver). Full reference, including every environment variable and a
-v1-to-v2 migration table: [docs/configuration.md](docs/configuration.md).
+deliver). Full reference, including every environment variable, the choice
+of dedupe backend, and a v1-to-v2 migration table:
+[docs/configuration.md](docs/configuration.md).
 
 One source entry:
 
@@ -245,6 +246,17 @@ in `internal/sink/build.go`. `sink.Sink` is the one interface in this
 service that is exported for a real reason: five implementations (log,
 http, aws-sqs, aws-sns, gcp-pubsub) are selected at runtime from
 configuration.
+
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md) — the five pipeline stages,
+  the concurrency model, what happens when each one fails, and the
+  interface inventory.
+- [docs/configuration.md](docs/configuration.md) — every environment
+  variable, both file schemas, the URL canonicalisation rules, and the
+  v1-to-v2 migration table.
+- [docs/decisions.md](docs/decisions.md) — the calls that shaped the
+  service and what would make each one wrong.
 
 ## Development
 
