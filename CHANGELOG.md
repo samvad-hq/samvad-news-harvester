@@ -23,6 +23,17 @@ complete v1-to-v2 mapping.
 - **`docs/configuration.md`** — the full environment variable table, both
   YAML schemas, the URL canonicalisation rules, and the v1-to-v2
   migration table.
+- **A Dockerfile and `docker-compose.yml`.** `docker compose up --build`
+  brings up the harvester and a Redis dedupe store with no Go toolchain,
+  no credentials and no setup — the example configuration is baked into
+  the image as its default. The image is a static binary on `scratch`
+  running as uid 65532, with no shell and no package manager.
+- **`govulncheck` in CI**, as its own job so a vulnerability disclosure
+  fails separately from a broken build. It reports only vulnerabilities
+  this code can actually reach, not everything in the dependency tree.
+- **`SECURITY.md`** — private reporting, what the service treats as
+  untrusted (publisher XML) versus trusted (operator configuration), the
+  protections in place, and their known limits.
 - **A Redis dedupe backend**, selected with `DEDUPE_BACKEND=redis` and
   `DEDUPE_REDIS_URL`. It exists for hosts with an ephemeral filesystem —
   Cloud Run, Railway and similar lose the bbolt file on every redeploy, and
@@ -209,6 +220,19 @@ And four defects found reviewing the rewrite itself:
   ever reported as missing by name, never with their value. The AWS and
   GCP identifiers (queue URL, topic ARN, project ID, topic) are not
   secrets and are reported as-is.
+- **Nine reachable vulnerabilities were closed** by upgrading
+  `golang.org/x/net` to v0.55.0, `golang.org/x/text` to v0.39.0 and
+  `google.golang.org/grpc` to v1.82.1. These were not theoretical: eight
+  sat on call paths this service uses, reached through `httpx.Client.Get`
+  and through `goquery` in the enrich stage. `govulncheck` now reports
+  zero.
+
+  This forced two version bumps. `golang.org/x/net` v0.55.0 requires
+  **Go 1.25**, and golangci-lint v1 refuses a module targeting 1.25, so
+  the linter moved to **v2.13.2** and `.golangci.yml` to the v2 schema.
+  The migration's default exclusion presets are deliberately not enabled:
+  the `comments` preset would suppress the missing-doc-comment findings
+  that keep every package and exported identifier documented.
 
 ### Removed
 

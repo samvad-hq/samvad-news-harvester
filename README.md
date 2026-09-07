@@ -40,6 +40,31 @@ queue sink receives — the log sink above prints a flattened subset of it.)
 Swap in a webhook or a cloud queue by editing `configs/sinks.yaml` — see
 [docs/configuration.md](docs/configuration.md).
 
+### With Docker
+
+No Go toolchain needed. This brings up the harvester and a Redis dedupe
+store together:
+
+```bash
+docker compose up --build
+```
+
+The image bakes the example configuration in as its default, so this
+produces the same visible output with no credentials and no setup. To
+crawl your own sources, copy the examples to `configs/sources.yaml` and
+`configs/sinks.yaml` and uncomment the `volumes:` block in
+`docker-compose.yml`.
+
+Compose uses `DEDUPE_BACKEND=redis` rather than the bbolt default,
+because a container's filesystem does not survive a rebuild — which is
+exactly the case that backend exists for. See
+[docs/configuration.md](docs/configuration.md#choosing-a-dedupe-backend).
+
+The image is a static binary on `scratch`, running as uid 65532. It has
+no shell and no package manager.
+
+### Flags
+
 `-once` runs a single crawl and exits; with no flags the process stays up
 and crawls on `CRAWL_INTERVAL` (default 15m). `-validate` checks
 `configs/sources.yaml` and `configs/sinks.yaml` without crawling anything:
@@ -257,8 +282,14 @@ configuration.
   v1-to-v2 migration table.
 - [docs/decisions.md](docs/decisions.md) — the calls that shaped the
   service and what would make each one wrong.
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability, what the
+  service treats as untrusted, and the known limits of its protections.
 
 ## Development
+
+Requires **Go 1.25** — `golang.org/x/net` needs it as of the versions
+this module pins — and **golangci-lint v2** (`make lint` checks and tells
+you how to install it if you have v1).
 
 ```bash
 make test                    # go test ./...
@@ -266,6 +297,10 @@ make race                    # go test -race ./...
 make lint                    # go vet + golangci-lint
 scripts/capture-fixtures.sh  # re-record sitemap XML fixtures
 ```
+
+CI additionally runs `gofmt -l`, a race-enabled test with coverage, and
+`govulncheck`, which reports only vulnerabilities this code can actually
+reach rather than everything in the dependency tree.
 
 Sitemap fixtures under `internal/source/testdata/` are committed on
 purpose: publisher XML drifts, and a shape change is exactly the failure

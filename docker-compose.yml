@@ -1,0 +1,47 @@
+# Bring the harvester up with a Redis dedupe store:
+#
+#   docker compose up --build
+#
+# It runs with no credentials and no accounts. The default sink writes
+# each article to stdout, so `docker compose logs -f harvester` shows real
+# news events within a minute or two.
+services:
+  harvester:
+    build: .
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Redis rather than the bbolt default, because a container's
+      # filesystem does not survive a rebuild — which is the reason this
+      # backend exists. See docs/configuration.md.
+      DEDUPE_BACKEND: redis
+      DEDUPE_REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: info
+      CRAWL_INTERVAL: 15m
+    # Uncomment to crawl your own sources and sinks instead of the
+    # examples baked into the image. Copy the example files first:
+    #   cp configs/sources.example.yaml configs/sources.yaml
+    #   cp configs/sinks.example.yaml   configs/sinks.yaml
+    # volumes:
+    #   - ./configs:/configs:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Dedupe state is a cache with a TTL, not a system of record: losing it
+    # costs one round of redelivered articles, which consumers already
+    # de-duplicate on article.id. appendonly keeps it across a restart
+    # anyway, since that is cheap here.
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:

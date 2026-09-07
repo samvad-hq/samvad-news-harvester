@@ -1,0 +1,23 @@
+# Everything the build does not need. Keeping this tight matters: the
+# recorded sitemap fixtures alone are several megabytes.
+.git
+.github
+.vscode
+.superpowers
+.agents
+.claude
+docs
+scripts
+internal/**/testdata
+*_test.go
+CHANGELOG.md
+README.md
+LICENSE
+Dockerfile
+.dockerignore
+docker-compose.yml
+data
+*.log
+configs/sources.yaml
+configs/sinks.yaml
+configs/.env

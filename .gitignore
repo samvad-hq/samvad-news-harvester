@@ -66,3 +66,7 @@ skills-lock.json
 
 # Design and planning notes (kept locally, not published)
 docs/design/
+
+# Editor settings are personal; the shared debug targets are not.
+.vscode/*
+!.vscode/launch.json

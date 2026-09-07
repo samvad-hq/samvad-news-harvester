@@ -1,30 +1,57 @@
 {
-	// VS Code Go debugger configuration
+	// Debug targets for cmd/harvester. `go test` targets are not listed:
+	// the Go extension offers "debug test" on every test function directly.
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run harvester (main)",
+			// Long-running mode: crawls immediately, then every
+			// CRAWL_INTERVAL until stopped.
+			"name": "harvester",
 			"type": "go",
 			"request": "launch",
 			"mode": "auto",
 			"program": "${workspaceFolder}/cmd/harvester",
-			"console": "integratedTerminal",
 			"cwd": "${workspaceFolder}",
-			"env": {
-				"GO111MODULE": "on"
-			}
+			"console": "integratedTerminal"
 		},
 		{
-			"name": "Test provider fetchers",
+			// One crawl, then exit. The usual target when stepping
+			// through the pipeline.
+			"name": "harvester -once",
 			"type": "go",
 			"request": "launch",
-			"mode": "test",
-			"program": "${workspaceFolder}/pkg/providers",
-			"console": "integratedTerminal",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/harvester",
+			"args": ["-once"],
 			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal"
+		},
+		{
+			// Loads and validates both config files, crawls nothing.
+			"name": "harvester -validate",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/harvester",
+			"args": ["-validate"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal"
+		},
+		{
+			// One crawl with deduplication off, so every article is
+			// fresh on every run. Useful when the store would
+			// otherwise make a second run deliver nothing.
+			"name": "harvester -once (no dedupe)",
+			"type": "go",
+			"request": "launch",
+			"mode": "auto",
+			"program": "${workspaceFolder}/cmd/harvester",
+			"args": ["-once"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
 			"env": {
-				"GO111MODULE": "on",
-				"GOCACHE": "${workspaceFolder}/.gocache"
+				"DEDUPE_BACKEND": "none",
+				"LOG_LEVEL": "debug"
 			}
 		}
 	]
