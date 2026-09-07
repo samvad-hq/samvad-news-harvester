@@ -16,6 +16,12 @@ Expect an acknowledgement within a week. This is a small project with no
 paid staff and no bug bounty; what it can offer is a straight answer and
 credit in the changelog if you want it.
 
+Secret scanning with push protection is enabled on this repository, so a
+webhook URL or cloud key committed by accident is caught before it
+reaches the remote. That is a backstop, not a substitute for keeping
+credentials in the environment and referencing them as `${VAR}` in the
+configuration files.
+
 ## Supported versions
 
 The most recent release only. Older tags do not receive fixes.

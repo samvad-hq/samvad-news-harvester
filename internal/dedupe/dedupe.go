@@ -2,10 +2,13 @@
 // a source that lists the same story on every crawl only produces one
 // event.
 //
-// Both implementations work in batches. A single crawl of one source can
-// carry thousands of article IDs — jagran publishes about 2500 — and
-// asking one question per article is what made the old store the
-// throughput ceiling of the whole service.
+// There are three stores: Bolt writes to a local file, Redis to an
+// external instance for hosts whose filesystem does not survive a
+// redeploy, and Noop remembers nothing. All of them work in batches. A
+// single crawl of one source can carry thousands of article IDs —
+// thedailyjagran publishes about 2500 — and asking one question per
+// article is what made the old store the throughput ceiling of the whole
+// service.
 package dedupe
 
 import "context"

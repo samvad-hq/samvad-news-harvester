@@ -23,9 +23,10 @@ import (
 
 // Sink delivers one event to one destination.
 //
-// This is the only exported interface in the service, because it is the
-// only abstraction with several implementations chosen at runtime from
-// configuration.
+// It is exported for genuine runtime polymorphism: five concrete types
+// are selected from configuration at startup and Fanout holds whichever
+// were configured. The other exported interfaces in this module exist for
+// narrower reasons — see docs/architecture.md for the inventory.
 type Sink interface {
 	// Name identifies the sink in logs and in a Result.
 	Name() string

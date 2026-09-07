@@ -1,6 +1,9 @@
 # samvad-news-harvester
 
 [![CI](https://github.com/samvad-hq/samvad-news-harvester/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/samvad-hq/samvad-news-harvester/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/samvad-hq/samvad-news-harvester)](https://goreportcard.com/report/github.com/samvad-hq/samvad-news-harvester)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/samvad-hq/samvad-news-harvester)](go.mod)
+[![License: ISC](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
 Samvad News Harvester crawls news sitemaps, identifies articles by a stable
 ID, and delivers them as JSON events to one or more sinks (a webhook, a

@@ -41,7 +41,11 @@ complete v1-to-v2 mapping.
   the failure above.
 - **`SECURITY.md`** — private reporting, what the service treats as
   untrusted (publisher XML) versus trusted (operator configuration), the
-  protections in place, and their known limits.
+  protections in place, and their known limits. Private vulnerability
+  reporting, secret scanning and push protection are enabled on the
+  repository, so the reporting route the file describes actually exists
+  and an accidentally committed webhook URL is caught before it is
+  pushed.
 - **A Redis dedupe backend**, selected with `DEDUPE_BACKEND=redis` and
   `DEDUPE_REDIS_URL`. It exists for hosts with an ephemeral filesystem —
   Cloud Run, Railway and similar lose the bbolt file on every redeploy, and

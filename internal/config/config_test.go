@@ -79,7 +79,7 @@ func TestLoadRejectsBadValues(t *testing.T) {
 		{name: "unparseable int", key: "SOURCE_CONCURRENCY", value: "lots"},
 		{name: "zero concurrency", key: "SOURCE_CONCURRENCY", value: "0"},
 		{name: "unknown log level", key: "LOG_LEVEL", value: "verbose"},
-		{name: "unknown dedupe backend", key: "DEDUPE_BACKEND", value: "redis"},
+		{name: "unknown dedupe backend", key: "DEDUPE_BACKEND", value: "postgres"},
 		{name: "zero per-host rate", key: "PER_HOST_RPS", value: "0"},
 		{name: "unparseable delivery concurrency", key: "DELIVERY_CONCURRENCY", value: "some"},
 		{name: "zero delivery concurrency", key: "DELIVERY_CONCURRENCY", value: "0"},
