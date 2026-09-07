@@ -25,7 +25,13 @@ import (
 func main() {
 	validateOnly := flag.Bool("validate", false, "check the configuration and exit without crawling")
 	once := flag.Bool("once", false, "run a single crawl and exit")
+	showVersion := flag.Bool("version", false, "print the build version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(buildVersion())
+		return
+	}
 
 	if err := run(*validateOnly, *once); err != nil {
 		fmt.Fprintf(os.Stderr, "harvester: %v\n", err)

@@ -13,9 +13,14 @@ RUN go mod download
 
 COPY . .
 
+# .dockerignore excludes .git, so the toolchain cannot stamp a revision
+# here. Pass the version in instead:
+#   docker build --build-arg VERSION=v0.2.0 .
+ARG VERSION=docker
+
 # CGO is off so the result is a static binary that runs on scratch.
 # Trimming paths keeps the build reproducible.
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/harvester ./cmd/harvester
+RUN CGO_ENABLED=0 go build -trimpath     -ldflags="-s -w -X main.version=${VERSION}"     -o /out/harvester ./cmd/harvester
 
 # scratch has no filesystem to speak of, so the writable directory the
 # bolt backend needs has to be built here and copied in with the right

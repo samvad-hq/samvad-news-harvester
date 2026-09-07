@@ -69,7 +69,13 @@ no shell and no package manager.
 ### Flags
 
 `-once` runs a single crawl and exits; with no flags the process stays up
-and crawls on `CRAWL_INTERVAL` (default 15m). `-validate` checks
+and crawls on `CRAWL_INTERVAL` (default 15m). `-version` reports which
+build is running:
+
+```bash
+go run ./cmd/harvester -version
+# samvad-news-harvester devel (c2d2606fa329) built 2026-09-08T09:12:04Z go1.25.14 darwin/arm64
+``` `-validate` checks
 `configs/sources.yaml` and `configs/sinks.yaml` without crawling anything:
 
 ```bash
@@ -287,6 +293,8 @@ configuration.
   service and what would make each one wrong.
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability, what the
   service treats as untrusted, and the known limits of its protections.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — toolchain requirements, the checks
+  a pull request must pass, and the conventions the code holds to.
 
 ## Development
 

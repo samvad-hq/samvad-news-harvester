@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-09-10
 
 A full rewrite of the service internals, plus the throughput work that
 followed it. **This release is breaking**: every environment variable,
@@ -23,6 +23,12 @@ complete v1-to-v2 mapping.
 - **`docs/configuration.md`** — the full environment variable table, both
   YAML schemas, the URL canonicalisation rules, and the v1-to-v2
   migration table.
+- **A `-version` flag**, reporting the injected version, the commit the
+  build came from and whether the tree was dirty, plus the toolchain and
+  platform. An operator looking at a misbehaving deployment needs to know
+  which build is running before anything else.
+- **`CONTRIBUTING.md`** — toolchain requirements, the pre-PR checks, and
+  the conventions the code holds to.
 - **A Dockerfile and `docker-compose.yml`.** `docker compose up --build`
   brings up the harvester and a Redis dedupe store with no Go toolchain,
   no credentials and no setup — the example configuration is baked into
